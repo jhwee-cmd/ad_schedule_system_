@@ -61,10 +61,82 @@ td, th { border-color: var(--grid); }
 /* Prevent line shimmering at scales */
 .sticky { backface-visibility: hidden; }
 
-/* Grid via box-shadow for crisp lines under scaling */
-.grid-cell {
+/* Grid via box-shadow for crisp lines under scaling - DEPRECATED */
+/* .grid-cell {
   box-shadow: inset -1px 0 0 var(--grid), inset 0 -1px 0 var(--grid);
   background-clip: padding-box;
 }
 .grid-head { box-shadow: inset 0 -1px 0 var(--grid); }
-.grid-first-row .grid-cell { box-shadow: inset -1px 0 0 var(--grid), inset 0 -1px 0 var(--grid), inset 0 1px 0 var(--grid); }
+.grid-first-row .grid-cell { box-shadow: inset -1px 0 0 var(--grid), inset 0 -1px 0 var(--grid), inset 0 1px 0 var(--grid); } */
+
+/* 레이어 충돌 방지(CSS) */
+.booking-pill { 
+  position: absolute; 
+  inset: 2px; 
+  background: #DCFCE7; 
+  border: 1px solid #86EFAC; 
+  z-index: 30; 
+}
+.summary-row { 
+  z-index: 10; 
+}   /* 요약행 <tr> */
+
+/* === Zoom & Layout Variables === */
+:root {
+  --z: 1;                       /* React에서 style로 주입 */
+  --w-col1: calc(8rem  * var(--z));   /* 구분 */
+  --w-col2: calc(10rem * var(--z));   /* 지면명 */
+  --w-col3: calc(8rem  * var(--z));   /* 구좌명 */
+  --w-day : calc(8rem  * var(--z));   /* 날짜 열 */
+  --cell-h: calc(3rem  * var(--z));
+  --pad   : calc(0.5rem * var(--z));
+  --fs    : calc(0.875rem * var(--z));
+  --grid  : rgba(0,0,0,0.06);
+  --head-h1: 2.0rem;              /* 1단(날짜 헤더) 높이 */
+  --head-h2: 2.5rem;              /* 2단(라벨 헤더) 높이 */
+  --head-total: calc(var(--head-h1) + var(--head-h2));
+}
+
+/* 테이블 레이아웃 안정화 */
+.table-grid{ table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+
+/* 공통 셀(경계는 border로) */
+.grid-cell{
+  height: var(--cell-h);
+  padding: var(--pad);
+  font-size: var(--fs);
+  border-right: 1px solid var(--grid);
+  border-bottom: 1px solid var(--grid);
+  background-clip: padding-box;
+}
+
+/* 헤더 하단선 */
+.grid-head{ border-bottom: 1px solid var(--grid); }
+
+/* sticky 좌측 컬럼 공통 */
+.sticky-col{
+  position: sticky;
+  background: #fff;
+  z-index: 50;
+  will-change: left;
+  backface-visibility: hidden;
+}
+.sticky-col::after{
+  content:"";
+  position:absolute; top:0; right:-1px; bottom:0;
+  width:1px; background: var(--grid);
+  pointer-events:none;
+}
+
+/* 열 폭 (Tailwind min-w 대신 이 클래스를 사용) */
+.minw-col1{ min-width: var(--w-col1); }
+.minw-col2{ min-width: var(--w-col2); }
+.minw-col3{ min-width: var(--w-col3); }
+.minw-day { min-width: var(--w-day ); }
+
+/* 두 헤더 줄 높이 고정 */
+.head-dates  th { height: var(--head-h1); }
+.head-labels th { height: var(--head-h2); }
+
+/* 부드러운 스크롤 */
+.smooth-scroll { scroll-behavior: smooth; }

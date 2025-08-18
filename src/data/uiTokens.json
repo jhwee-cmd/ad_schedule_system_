@@ -1,0 +1,116 @@
+{
+  "colors": {
+    "primary": {
+      "50": "#EFF6FF",
+      "100": "#DBEAFE",
+      "500": "#3B82F6",
+      "600": "#2563EB",
+      "700": "#1D4ED8"
+    },
+    "success": {
+      "50": "#F0FDF4",
+      "100": "#DCFCE7",
+      "500": "#22C55E",
+      "600": "#16A34A",
+      "700": "#15803D"
+    },
+    "warning": {
+      "50": "#FFFBEB",
+      "100": "#FEF3C7",
+      "500": "#F59E0B",
+      "600": "#D97706",
+      "700": "#B45309"
+    },
+    "danger": {
+      "50": "#FEF2F2",
+      "100": "#FEE2E2",
+      "500": "#EF4444",
+      "600": "#DC2626",
+      "700": "#B91C1C"
+    },
+    "gray": {
+      "50": "#F9FAFB",
+      "100": "#F3F4F6",
+      "200": "#E5E7EB",
+      "300": "#D1D5DB",
+      "400": "#9CA3AF",
+      "500": "#6B7280",
+      "600": "#4B5563",
+      "700": "#374151",
+      "800": "#1F2937",
+      "900": "#111827"
+    },
+    "banner": {
+      "interactive": "#3B82F6",
+      "banner": "#22C55E",
+      "funnel": "#8B5CF6",
+      "alert": "#F59E0B",
+      "other": "#6B7280"
+    }
+  },
+  "spacing": {
+    "xs": "0.25rem",
+    "sm": "0.5rem",
+    "md": "1rem",
+    "lg": "1.5rem",
+    "xl": "2rem",
+    "2xl": "3rem"
+  },
+  "heights": {
+    "cell": "3rem",
+    "header": "2.5rem",
+    "summary": "2rem",
+    "input": "2.5rem",
+    "button": "2.5rem"
+  },
+  "borders": {
+    "radius": {
+      "sm": "0.25rem",
+      "md": "0.375rem",
+      "lg": "0.5rem",
+      "xl": "0.75rem"
+    },
+    "width": {
+      "thin": "1px",
+      "normal": "2px",
+      "thick": "3px"
+    },
+    "style": {
+      "solid": "solid",
+      "dashed": "dashed",
+      "dotted": "dotted"
+    }
+  },
+  "fonts": {
+    "size": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem"
+    },
+    "weight": {
+      "normal": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
+    },
+    "family": {
+      "sans": "ui-sans-serif, system-ui, sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, monospace"
+    }
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    "md": "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+    "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+    "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1)"
+  },
+  "zIndex": {
+    "dropdown": 50,
+    "modal": 100,
+    "tooltip": 150,
+    "overlay": 200
+  }
+}

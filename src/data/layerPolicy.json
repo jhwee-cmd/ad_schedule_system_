@@ -1,0 +1,91 @@
+{
+  "zIndexLayers": {
+    "base": 0,
+    "cell": 1,
+    "booking": 10,
+    "schedule": 20,
+    "summary": 30,
+    "header": 40,
+    "sticky": 50,
+    "modal": 100,
+    "tooltip": 150,
+    "overlay": 200
+  },
+  "overlapPolicy": {
+    "multipleBookings": {
+      "strategy": "stack",
+      "maxVisible": 3,
+      "overflowLabel": "+{count}",
+      "backgroundColor": "rgba(34, 197, 94, 0.1)",
+      "borderColor": "rgba(34, 197, 94, 0.3)"
+    },
+    "bookingAndSchedule": {
+      "strategy": "booking-priority",
+      "bookingBackground": "rgba(34, 197, 94, 0.2)",
+      "scheduleBackground": "rgba(59, 130, 246, 0.2)",
+      "overlapBackground": "rgba(139, 92, 246, 0.3)"
+    },
+    "summaryRowOverlap": {
+      "strategy": "summary-above",
+      "backgroundColor": "rgba(107, 114, 128, 0.1)",
+      "borderColor": "rgba(107, 114, 128, 0.3)"
+    }
+  },
+  "summaryRowPolicy": {
+    "position": "bottom",
+    "sticky": true,
+    "backgroundColor": "#F9FAFB",
+    "borderTop": "2px solid #E5E7EB",
+    "fontWeight": "600",
+    "textColor": "#374151",
+    "height": "2rem",
+    "zIndex": 30
+  },
+  "stickyColumnPolicy": {
+    "position": "left",
+    "backgroundColor": "#F9FAFB",
+    "borderRight": "2px solid #E5E7EB",
+    "zIndex": 50,
+    "shadow": "2px 0 4px rgba(0,0,0,0.1)"
+  },
+  "cellContentPolicy": {
+    "maxHeight": "100%",
+    "overflow": "hidden",
+    "textOverflow": "ellipsis",
+    "whiteSpace": "nowrap",
+    "padding": "0.25rem",
+    "fontSize": "0.875rem"
+  },
+  "hoverPolicy": {
+    "booking": {
+      "backgroundColor": "rgba(34, 197, 94, 0.3)",
+      "borderColor": "rgba(34, 197, 94, 0.5)",
+      "zIndex": 25
+    },
+    "schedule": {
+      "backgroundColor": "rgba(59, 130, 246, 0.3)",
+      "borderColor": "rgba(59, 130, 246, 0.5)",
+      "zIndex": 25
+    }
+  },
+  "responsivePolicy": {
+    "mobile": {
+      "maxVisibleColumns": 3,
+      "cellMinWidth": "80px",
+      "fontSize": "0.75rem",
+      "summaryRowHeight": "1.5rem"
+    },
+    "tablet": {
+      "maxVisibleColumns": 5,
+      "cellMinWidth": "100px",
+      "fontSize": "0.875rem",
+      "summaryRowHeight": "2rem"
+    },
+    "desktop": {
+      "maxVisibleColumns": 7,
+      "cellMinWidth": "120px",
+      "fontSize": "1rem",
+      "summaryRowHeight": "2rem"
+    }
+  }
+}

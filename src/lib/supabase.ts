@@ -1,6 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://etruczhhgpomwhftoswd.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV0cnVjemhoZ3BvbXdoZnRvc3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4ODk0NjcsImV4cCI6MjA2OTQ2NTQ2N30.4tphjNopN4ELm8O18QabCp4AqrhzxjsoS3ExmwkVcfM'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey) 
+console.log('Supabase URL:', SUPABASE_URL)
+console.log('Supabase ANON key exists:', !!SUPABASE_ANON)
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON)
+
+export function createServerClient() {
+  console.log('Creating server client with URL:', SUPABASE_URL)
+  return createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: {
+      persistSession: false
+    }
+  })
+}
+
+export function createBrowserClient() {
+  return createClient(SUPABASE_URL, SUPABASE_ANON)
+}

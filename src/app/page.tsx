@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { AdScheduleWithDetails } from '@/types/database'
 import { useAds } from '@/hooks/useAds'
 import { useSettings } from '@/hooks/useSettings'
@@ -11,10 +11,12 @@ import NotificationPanel, { UpcomingAd } from '@/components/NotificationPanel'
 import AdDetailPanel from '@/components/AdDetailPanel' // AdDetailPanel 임포트
 import { Settings, BarChart3, Users, Bell } from 'lucide-react'
 import { startOfTomorrow, startOfWeek, endOfWeek, addDays, parseISO, isWithinInterval, format } from 'date-fns'
+import { getBookingsByRange } from './actions/getBookings'
 
 export default function Home() {
   const [activeView, setActiveView] = useState<'spreadsheet' | 'campaigns' | 'settings'>('spreadsheet')
   const [selectedSchedule, setSelectedSchedule] = useState<AdScheduleWithDetails | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
   
   const {
     campaigns,
@@ -36,6 +38,26 @@ export default function Home() {
     updateCountries,
     resetSettings
   } = useSettings()
+
+  // Fetch bookings data for current week
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const startOfWeekDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+        const endOfWeekDate = endOfWeek(new Date(), { weekStartsOn: 1 });
+        const startYmd = format(startOfWeekDate, 'yyyy-MM-dd');
+        const endYmd = format(endOfWeekDate, 'yyyy-MM-dd');
+        
+        // DB에서 주간 범위 읽기
+        const dbBookings = await getBookingsByRange(startYmd, endYmd);
+        setBookings(dbBookings);
+      } catch (error) {
+        console.error('Failed to fetch bookings:', error);
+      }
+    };
+    
+    fetchBookings();
+  }, []);
 
   const { adsStartingTomorrow, adsStartingNextWeek } = useMemo(() => {
     const tomorrow = startOfTomorrow();
@@ -105,6 +127,21 @@ export default function Home() {
   const handleAdClick = (schedule: AdScheduleWithDetails) => {
     setSelectedSchedule(schedule);
   }
+
+  // Refresh bookings after successful creation
+  const handleBookingCreated = async () => {
+    try {
+      const startOfWeekDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const endOfWeekDate = endOfWeek(new Date(), { weekStartsOn: 1 });
+      const startYmd = format(startOfWeekDate, 'yyyy-MM-dd');
+      const endYmd = format(endOfWeekDate, 'yyyy-MM-dd');
+      
+      const data = await getBookingsByRange(startYmd, endYmd);
+      setBookings(data);
+    } catch (error) {
+      console.error('Failed to refresh bookings:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -178,10 +215,12 @@ export default function Home() {
           <SpreadsheetView
             adSchedules={adSchedules}
             campaigns={campaigns}
+            externalBookings={bookings}
             onCreateSchedule={handleCreateSchedule}
             onUpdateSchedule={handleUpdateSchedule}
             onDeleteSchedule={handleDeleteSchedule}
             onAdClick={handleAdClick}
+            onBookingCreated={handleBookingCreated}
             loading={loading}
           />
         )}

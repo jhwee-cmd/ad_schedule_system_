@@ -1,0 +1,86 @@
+{
+  "interactive": {
+    "type": "interactive",
+    "category": "인터랙티브",
+    "hasExposure": true,
+    "hasCountry": false,
+    "color": "blue"
+  },
+  "main_home_popup": {
+    "type": "banner",
+    "category": "배너",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "green"
+  },
+  "main_home_front": {
+    "type": "banner",
+    "category": "배너",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "green"
+  },
+  "main_home_banner": {
+    "type": "banner",
+    "category": "배너",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "green"
+  },
+  "main_home": {
+    "type": "banner",
+    "category": "배너",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "green"
+  },
+  "checklist": {
+    "type": "funnel",
+    "category": "퍼널",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "purple"
+  },
+  "funnel_search": {
+    "type": "funnel",
+    "category": "퍼널",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "purple"
+  },
+  "funnel_domestic": {
+    "type": "funnel",
+    "category": "퍼널",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "purple"
+  },
+  "funnel_oversea": {
+    "type": "funnel",
+    "category": "퍼널",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "purple"
+  },
+  "funnel_traveler": {
+    "type": "funnel",
+    "category": "퍼널",
+    "hasExposure": false,
+    "hasCountry": true,
+    "color": "purple"
+  },
+  "friend_talk": {
+    "type": "alert",
+    "category": "알림",
+    "hasExposure": true,
+    "hasCountry": false,
+    "color": "orange"
+  },
+  "promo_fe": {
+    "type": "other",
+    "category": "기타",
+    "hasExposure": false,
+    "hasCountry": false,
+    "color": "gray"
+  }
+}

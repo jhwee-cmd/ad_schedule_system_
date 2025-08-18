@@ -1,0 +1,100 @@
+[
+  {
+    "id": 1,
+    "basis_dt": "2025-08-18",
+    "screen_id": "main_home_popup_t1",
+    "country_nm": "KR,JP,US",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 2,
+    "basis_dt": "2025-08-18",
+    "screen_id": "interactive_t1",
+    "country_nm": null,
+    "guaranteed_exposure": 20000
+  },
+  {
+    "id": 3,
+    "basis_dt": "2025-08-19",
+    "screen_id": "main_home_popup_t1",
+    "country_nm": "KR,JP,US",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 4,
+    "basis_dt": "2025-08-19",
+    "screen_id": "interactive_t1",
+    "country_nm": null,
+    "guaranteed_exposure": 20000
+  },
+  {
+    "id": 5,
+    "basis_dt": "2025-08-20",
+    "screen_id": "funnel_oversea_t1",
+    "country_nm": "ES,FR,IT",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 6,
+    "basis_dt": "2025-08-20",
+    "screen_id": "friend_talk_t1",
+    "country_nm": null,
+    "guaranteed_exposure": 15000
+  },
+  {
+    "id": 7,
+    "basis_dt": "2025-08-21",
+    "screen_id": "main_home_front_t1",
+    "country_nm": "KR",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 8,
+    "basis_dt": "2025-08-21",
+    "screen_id": "checklist_t1",
+    "country_nm": "KR,JP",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 9,
+    "basis_dt": "2025-08-22",
+    "screen_id": "funnel_domestic_t1",
+    "country_nm": "KR",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 10,
+    "basis_dt": "2025-08-22",
+    "screen_id": "promo_fe_t1",
+    "country_nm": null,
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 11,
+    "basis_dt": "2025-08-23",
+    "screen_id": "main_home_banner_t1",
+    "country_nm": "KR,US",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 12,
+    "basis_dt": "2025-08-23",
+    "screen_id": "funnel_search_t1",
+    "country_nm": "KR,JP,US",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 13,
+    "basis_dt": "2025-08-24",
+    "screen_id": "main_home_popup_t1",
+    "country_nm": "KR,JP,US",
+    "guaranteed_exposure": null
+  },
+  {
+    "id": 14,
+    "basis_dt": "2025-08-24",
+    "screen_id": "interactive_t1",
+    "country_nm": null,
+    "guaranteed_exposure": 25000
+  }
+]

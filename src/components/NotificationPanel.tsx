@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 export interface UpcomingAd {
     advertiser_name: string;
@@ -19,8 +20,28 @@ interface NotificationPanelProps {
 export default function NotificationPanel({ title, upcomingAds, icon }: NotificationPanelProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [showAll, setShowAll] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const displayedAds = showAll ? upcomingAds : upcomingAds.slice(0, 3);
+
+    // Prevent hydration mismatch by not rendering until client-side
+    if (!isClient) {
+        return (
+            <div className="bg-white overflow-hidden shadow-sm rounded-lg border">
+                <div className="w-full flex items-center justify-between p-4 text-left">
+                    <div className="flex items-center">
+                        <span className="text-yellow-500 mr-3">{icon}</span>
+                        <h3 className="text-md font-bold text-gray-800">{title} (0)</h3>
+                    </div>
+                    <ChevronRight size={20} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white overflow-hidden shadow-sm rounded-lg border">
@@ -61,6 +82,3 @@ export default function NotificationPanel({ title, upcomingAds, icon }: Notifica
         </div>
     );
 }
-
-// Need to import these from date-fns in the parent component where this is used
-import { format, parseISO } from 'date-fns';

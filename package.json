@@ -14,12 +14,18 @@
     "@fullcalendar/list": "^6.1.18",
     "@fullcalendar/react": "^6.1.18",
     "@fullcalendar/timegrid": "^6.1.18",
-    "@supabase/supabase-js": "^2.53.0",
+    "@supabase/ssr": "0.6.1",
+    "@supabase/supabase-js": "2.54.0",
     "date-fns": "^4.1.0",
+    "lodash.chunk": "^4.2.0",
     "lucide-react": "^0.534.0",
     "next": "15.4.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-day-picker": "^9.8.1",
+    "react-dom": "19.1.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.0.17",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,0 +1,73 @@
+{
+  "summaryRows": {
+    "top": {
+      "interactive": {
+        "label": "인터랙티브 총 노출",
+        "type": "exposure",
+        "position": "top",
+        "zIndex": 10
+      },
+      "banner": {
+        "label": "배너 총 타겟",
+        "type": "country",
+        "position": "top",
+        "zIndex": 10
+      },
+      "funnel": {
+        "label": "퍼널 총 타겟",
+        "type": "country",
+        "position": "top",
+        "zIndex": 10
+      },
+      "alert": {
+        "label": "알림 총 노출",
+        "type": "exposure",
+        "position": "top",
+        "zIndex": 10
+      }
+    },
+    "bottom": {
+      "interactive": {
+        "label": "인터랙티브 일평균",
+        "type": "daily",
+        "position": "bottom",
+        "zIndex": 5
+      },
+      "banner": {
+        "label": "배너 일평균",
+        "type": "daily",
+        "position": "bottom",
+        "zIndex": 5
+      },
+      "funnel": {
+        "label": "퍼널 일평균",
+        "type": "daily",
+        "position": "bottom",
+        "zIndex": 5
+      },
+      "alert": {
+        "label": "알림 일평균",
+        "type": "daily",
+        "position": "bottom",
+        "zIndex": 5
+      }
+    }
+  },
+  "sectionHeaders": {
+    "display": {
+      "label": "디스플레이 광고",
+      "color": "#3B82F6",
+      "icon": "📺"
+    },
+    "alert": {
+      "label": "알림 광고",
+      "color": "#F59E0B",
+      "icon": "🔔"
+    },
+    "other": {
+      "label": "기타 상품",
+      "color": "#6B7280",
+      "icon": "📦"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+calendar-ad-manager/
+.
+.env.local
+postcss.config.mjs
+next-env.d.ts
+README.md
+tailwind.config.ts
+public
+  file.svg
+  vercel.svg
+  next.svg
+  globe.svg
+  window.svg
+FILE_TREE.md
+.gitignore
+package-lock.json
+package.json
+tsconfig.json
+eslint.config.mjs
+next.config.ts
+src
+  types
+    database.ts
+  app
+    favicon.ico
+    layout.tsx
+    page.tsx
+    globals.css
+  components
+    AdScheduleForm.tsx
+    CampaignView.tsx
+    SettingsView.tsx
+    NotificationPanel.tsx
+    CampaignModal.tsx
+    AdDetailPanel.tsx
+    SpreadsheetView.tsx
+    MultiSelectCheckbox.tsx
+  hooks
+    useAds.ts
+    useSettings.ts
+  lib
+    summary.ts
+    supabase.ts
+  data
+    masterData.ts
+    mockSchedules.ts
+    RegionCountry.ts
+    BannerInformation.ts
+  services
+    adService.ts
