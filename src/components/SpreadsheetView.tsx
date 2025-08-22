@@ -3,33 +3,21 @@
 import { AdScheduleWithDetails, Campaign, SlotType } from '@/types/database'
 import { slotTypes } from '@/data/masterData'
 import { spreadsheetLayout } from '@/data/mockSchedules'
-import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, addDays, startOfDay, parse, isSameDay, getDay } from 'date-fns'
+import { format, parseISO, startOfWeek, endOfWeek, eachDayOfInterval, addDays, startOfDay } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { buildDailySummary, Span } from '@/lib/summary'
 import AdScheduleForm from './AdScheduleForm'
 import { ChevronLeft, ChevronRight, Plus, Search, X } from 'lucide-react'
-import CellPill from '@/components/calendar/CellPill'
-import { buildCellRuns, Booking } from '@/lib/cell-builder'
-import { useDateRangeStore } from '@/state/dateRangeStore'
-
-type BookingItem = { 
-  basis_dt: string; 
-  screen_id: string; 
-  country_nm?: string | null; 
-  guaranteed_exposure?: number | null 
-}
 
 interface SpreadsheetViewProps {
   adSchedules: AdScheduleWithDetails[]
   campaigns: Campaign[]
-  externalBookings?: BookingItem[]
   onCreateSchedule: (schedule: any, targets: any[]) => Promise<void>
   onUpdateSchedule: (id: string, updates: any, targets?: any[]) => Promise<void>
   onDeleteSchedule: (id: string) => Promise<void>
   onAdClick: (schedule: AdScheduleWithDetails) => void
-  onBookingCreated: () => Promise<void>
   loading?: boolean
 }
 
@@ -69,45 +57,7 @@ const summaryConfig: { [key: string]: ('country' | 'exposure')[] } = {
   'interactive_t7': ['exposure'],
 };
 
-// screen_id ↔ banner_id 매칭 함수 단일화(팝업 포함)
-const normBase = (s?: string | null) => {
-  const v = String(s ?? '').toLowerCase().replace(/\s+/g, '');
-  const base = v.replace(/(_t\d+|[-_.]?v\d+|-\d+)$/, '');
-  return base
-    .replace(/^mainhomepopup.*$/, 'main_home_popup')  // ← 팝업 포함
-    .replace(/^mainhomefront$/, 'main_home_front')
-    .replace(/^mainhomebanner$/, 'main_home_banner')
-    .replace(/^mainhome$/, 'main_home')
-    .replace(/^checklist$/, 'checklist')
-    .replace(/^interactive.*$/, 'interactive')
-    .replace(/^funnelsearch.*$/, 'funnel_search')
-    .replace(/^funneldomestic.*$/, 'funnel_domestic')
-    .replace(/^funne(l)?over(sea|seas).*$/, 'funnel_oversea')
-    .replace(/^funneltraveler.*$/, 'funnel_traveler');
-};
-
-const isSameSlot = (bannerId: string, screenId: string) => normBase(bannerId) === normBase(screenId);
-
-// 날짜 비교를 로컬 00:00 기준으로 통일
-const parseYmd = (ymd: string) => parse(ymd, 'yyyy-MM-dd', new Date()); // 절대 new Date(ymd) 금지
-
 const dropdownOptions = ['전체 보기', ...spreadsheetLayout.map(category => category.name)];
-
-function renderRowCells(row: { banner_id: string }, weekDays: Date[], bookings: Booking[]) {
-  const runs = buildCellRuns({ rowBannerId: row.banner_id, weekDays, bookings });
-
-  return runs.map((r, idx) => {
-    if (!r.labelTop && !r.labelBottom) {
-      return <td key={`empty-${idx}`} className="grid-cell" />;
-    }
-    return (
-      <td key={`run-${idx}`} colSpan={r.span} className="grid-cell p-0"
-          style={{ "--cell-h": "3rem" } as React.CSSProperties}>
-        <CellPill labelTop={r.labelTop} labelBottom={r.labelBottom} />
-      </td>
-    );
-  });
-}
 
 const formatAdInfo = (schedule: AdScheduleWithDetails): React.ReactNode => {
   const salesOwner = schedule.campaign?.sales_owner || '담당자 미지정';
@@ -129,12 +79,10 @@ const formatAdInfo = (schedule: AdScheduleWithDetails): React.ReactNode => {
 export default function SpreadsheetView({
   adSchedules,
   campaigns,
-  externalBookings,
   onCreateSchedule,
   onUpdateSchedule,
   onDeleteSchedule,
   onAdClick,
-  onBookingCreated,
   loading = false
 }: SpreadsheetViewProps) {
   const SUMMARY_PLACEMENT: 'top' | 'bottom' = 'top'
@@ -151,7 +99,7 @@ export default function SpreadsheetView({
   const COL_PX = 128;
   const CHUNK_DAYS = 7;
   const MAX_WEEKS = 12;
-  const [startDate, setStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [startDate, setStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [visibleDays, setVisibleDays] = useState(CHUNK_DAYS * 6);
   const days = useMemo(() => Array.from({ length: visibleDays }, (_, i) => addDays(startDate, i)), [startDate, visibleDays]);
 
@@ -159,97 +107,37 @@ export default function SpreadsheetView({
   const isLoadingRef = useRef(false);
   const lastLeftRef = useRef(0);
 
-  const zoomVars = useMemo(() => ({ ['--z' as any]: zoom }), [zoom]);
+  const zoomStyle = useMemo(() => ({
+    transform: `scale(${zoom})`,
+    transformOrigin: 'top left' as const,
+    width: `${100 / zoom}%`,
+    willChange: 'transform' as const,
+    backfaceVisibility: 'hidden' as const,
+  }), [zoom]);
 
-  // 실시간 타이틀 갱신을 위한 스토어 사용
-  const draft = useDateRangeStore(s => s.draft);
-
-
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
 
   // Sticky left offsets (px) computed from actual header cell widths
   const thRef1 = useRef<HTMLTableCellElement | null>(null); // 구분
   const thRef2 = useRef<HTMLTableCellElement | null>(null); // 지면명
   const thRef3 = useRef<HTMLTableCellElement | null>(null); // 구좌명
   const headRowRef = useRef<HTMLTableRowElement | null>(null);
-  const dayRefs = useRef<(HTMLTableCellElement|null)[]>([]);
-
-  // 주 스냅 관련 상태
-  const WEEK_STARTS_ON = 1; // 월요일 시작
-  const [weekIdxList, setWeekIdxList] = useState<number[]>([]);
-  const [weekLefts, setWeekLefts] = useState<number[]>([]);
-  const [visibleWeekIdx, setVisibleWeekIdx] = useState(0);
-  const scrollEndTimer = useRef<number | null>(null);
 
   const [left1, setLeft1] = useState<number>(0);
   const [left2, setLeft2] = useState<number>(0);
   const [left3, setLeft3] = useState<number>(0);
   const [headH, setHeadH] = useState<number>(48);
 
-  useLayoutEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const w1 = Math.round(thRef1.current?.offsetWidth ?? 0);
-      const w2 = Math.round(thRef2.current?.offsetWidth ?? 0);
-      const w3 = Math.round(thRef3.current?.offsetWidth ?? 0);
-      setLeft1(w1);
-      setLeft2(w1 + w2);
-      setLeft3(w1 + w2 + w3);
-      setHeadH(Math.round(headRowRef.current?.offsetHeight ?? 48));
-    });
-    return () => cancelAnimationFrame(id);
+  useEffect(() => {
+    const w1 = Math.round(thRef1.current?.offsetWidth ?? 0);
+    const w2 = Math.round(thRef2.current?.offsetWidth ?? 0);
+    const w3 = Math.round(thRef3.current?.offsetWidth ?? 0);
+    setLeft1(Math.round(w1));
+    setLeft2(Math.round(w1 + w2));
+    setLeft3(Math.round(w1 + w2 + w3));
+    setHeadH(Math.round(headRowRef.current?.offsetHeight ?? 48));
   }, [zoom, density, selectedPlacementGroup]);
-
-  // 주 시작 인덱스 계산
-  const getWeekStarts = useCallback(() => {
-    const idx: number[] = [];
-    days.forEach((d, i) => {
-      if (getDay(d) === WEEK_STARTS_ON) idx.push(i);
-    });
-    // 첫 주가 주중에 시작했을 수 있으니 맨 앞(0) 보정
-    if (idx[0] !== 0) idx.unshift(0);
-    return idx;
-  }, [days]);
-
-  // 스크롤 기준 좌표: "해당 일자 헤더의 좌측 끝"을 sticky 블록 바로 오른쪽에 맞춤
-  const measureWeekLefts = useCallback(() => {
-    const anchors = getWeekStarts();
-    const lefts = anchors.map(i => {
-      const el = dayRefs.current[i];
-      if (!el || !scRef.current) return 0;
-      const headerLeft = el.offsetLeft;            // 테이블 내부 좌표
-      return Math.max(0, headerLeft - left3);      // sticky 3열 너비만큼 보정
-    });
-    setWeekIdxList(anchors);
-    setWeekLefts(lefts);
-  }, [getWeekStarts, left3]);
-
-  // 리사이즈/줌/밀도 변경 시 앵커 재계산
-  useLayoutEffect(() => {
-    const id = requestAnimationFrame(measureWeekLefts);
-    return () => cancelAnimationFrame(id);
-  }, [measureWeekLefts, zoom, density, selectedPlacementGroup, days]);
-
-  // 스냅된 주 시작/끝
-  const snappedStart = useMemo(() => {
-    const idx = weekIdxList[visibleWeekIdx] ?? 0;
-    return days[idx];
-  }, [days, weekIdxList, visibleWeekIdx]);
-
-  const weekStart = useMemo(() => {
-    if (draft?.from && draft?.to) {
-      return startOfWeek(draft.from, { weekStartsOn: WEEK_STARTS_ON });
-    }
-    return startOfWeek(snappedStart, { weekStartsOn: WEEK_STARTS_ON });
-  }, [draft, snappedStart]);
-
-  const weekEnd = useMemo(() => {
-    return endOfWeek(weekStart, { weekStartsOn: WEEK_STARTS_ON });
-  }, [weekStart]);
-
-  const title = useMemo(() => {
-    // 예: "8월 18일 주 (8/18 ~ 8/24)"
-    return `${format(weekStart, 'M월 d일', { locale: ko })} 주 (${format(weekStart, 'M/d')} ~ ${format(weekEnd, 'M/d')})`;
-  }, [weekStart, weekEnd]);
-
   const densityClass = {
     compact: 'text-[12px] leading-[18px] [&_td]:py-1 [&_th]:py-1',
     cozy: 'text-[13px] leading-[20px] [&_td]:py-1.5 [&_th]:py-1.5',
@@ -262,45 +150,6 @@ export default function SpreadsheetView({
       schedule.campaign?.advertiser_name?.toLowerCase().includes(searchAdvertiser.toLowerCase())
     )
   }, [adSchedules, searchAdvertiser])
-
-  // 내부(in-memory) 생성 대신, 외부가 오면 외부만 사용하도록 통일
-  const bookings: BookingItem[] = useMemo(() => {
-    if (externalBookings?.length) return externalBookings;
-    
-    // 기존 in-memory 로직 (fallback)
-    const items: BookingItem[] = []
-    
-    // Add adSchedules data
-    adSchedules.forEach((s) => {
-      const start = parseISO(s.start_date)
-      const end = parseISO(s.end_date)
-      const allDays = eachDayOfInterval({ start, end })
-      const countryList = s.targets?.map((t) => t.country_code).filter(Boolean) || []
-      const country_nm = countryList.join(',')
-      allDays.forEach((d) => {
-        const ds = format(d, 'yyyy-MM-dd')
-        items.push({
-          basis_dt: ds,
-          screen_id: s.banner_id,
-          country_nm,
-          guaranteed_exposure: s.guaranteed_exposure ?? 0,
-        })
-      })
-    })
-    
-    return items
-  }, [externalBookings, adSchedules])
-
-  // Create booking map for visual display
-  const bookingMap = useMemo(() => {
-    const map = new Map<string, any[]>()
-    bookings.forEach(booking => {
-      const key = `${booking.basis_dt}:${booking.screen_id}`
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(booking)
-    })
-    return map
-  }, [bookings])
 
   const scheduleMap = useMemo(() => {
     const map = new Map<string, AdScheduleWithDetails[]>()
@@ -318,15 +167,33 @@ export default function SpreadsheetView({
     return map
   }, [filteredSchedules])
 
-  // 즉시 원인 파악용 진단 로그 추가(임시)
-  useEffect(() => {
-    if (!bookings.length) return;
-    console.log('🔍 Booking 진단:', {
-      totalBookings: bookings.length,
-      externalBookings: externalBookings?.length || 0,
-      sampleBookings: bookings.slice(0, 3).map(b => ({ basis_dt: b.basis_dt, screen_id: b.screen_id }))
-    });
-  }, [bookings, externalBookings]);
+  // Build bookings (daily) from adSchedules to feed summary util
+  type BookingItemLocal = {
+    basis_dt: string
+    screen_id: string
+    country_nm?: string | null
+    guaranteed_exposure?: number | null
+  }
+  const bookings: BookingItemLocal[] = useMemo(() => {
+    const items: BookingItemLocal[] = []
+    adSchedules.forEach((s) => {
+      const start = parseISO(s.start_date)
+      const end = parseISO(s.end_date)
+      const allDays = eachDayOfInterval({ start, end })
+      const countryList = s.targets?.map((t) => t.country_code).filter(Boolean) || []
+      const country_nm = countryList.join(',')
+      allDays.forEach((d) => {
+        const ds = format(d, 'yyyy-MM-dd')
+        items.push({
+          basis_dt: ds,
+          screen_id: s.banner_id,
+          country_nm,
+          guaranteed_exposure: s.guaranteed_exposure ?? 0,
+        })
+      })
+    })
+    return items
+  }, [adSchedules])
 
   // Determine which screen_ids (here banner_ids) belong to country vs impression summaries
   const SCREENS_COUNTRIES: string[] = useMemo(() =>
@@ -400,9 +267,9 @@ export default function SpreadsheetView({
       ? spreadsheetLayout
       : spreadsheetLayout.filter(category => category.name === selectedPlacementGroup);
 
-    return categoriesToShow.map((category, categoryIdx) => {
-      const processedPlacements = category.placements.map((placement, placementIdx) => {
-        const processedSlots = placement.slots.map((slot, slotIndex) => {
+    return categoriesToShow.map(category => {
+      const processedPlacements = category.placements.map(placement => {
+        const processedSlots = placement.slots.map(slot => {
           const summaryTypes = summaryConfig[slot.banner_id];
           let summaryData = null;
 
@@ -466,58 +333,29 @@ export default function SpreadsheetView({
           return {
             slot,
             summaryData,
-            adData,
-            __key: `${categoryIdx}-${placementIdx}-${slotIndex}-${slot.banner_id}`,
+            adData
           };
         });
 
         return {
           placement,
-          slots: processedSlots,
-          __key: `${categoryIdx}-${placementIdx}-${placement.name}`,
+          slots: processedSlots
         };
       });
 
       return {
         category,
-        placements: processedPlacements,
-        __key: `${categoryIdx}-${category.name}`,
+        placements: processedPlacements
       };
     });
   }, [selectedPlacementGroup, scheduleMap, days]);
 
-  // 스크롤 종료 감지 → 가장 가까운 주로 스냅
-  const snapToNearestWeek = useCallback(() => {
-    const sc = scRef.current;
-    if (!sc || !weekLefts.length) return;
-    const x = sc.scrollLeft;
-    // 가장 가까운 앵커 찾기
-    let best = 0, bestDiff = Number.POSITIVE_INFINITY;
-    weekLefts.forEach((L, i) => {
-      const diff = Math.abs(L - x);
-      if (diff < bestDiff) { bestDiff = diff; best = i; }
-    });
-    sc.scrollTo({ left: weekLefts[best], behavior: 'smooth' });
-    setVisibleWeekIdx(best);
-  }, [weekLefts]);
-
-  // 좌/우 버튼으로 주 단위 이동
-  const goWeek = (delta: number) => {
-    if (!scRef.current || !weekLefts.length) return;
-    const next = Math.min(
-      weekLefts.length - 1,
-      Math.max(0, visibleWeekIdx + delta),
-    );
-    scRef.current.scrollTo({ left: weekLefts[next], behavior: 'smooth' });
-    setVisibleWeekIdx(next);
-  };
-
-  const goToPreviousWeek = () => goWeek(-1);
-  const goToNextWeek = () => goWeek(1);
+  const goToPreviousWeek = () => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() - 7)))
+  const goToNextWeek = () => setCurrentDate(prev => new Date(prev.setDate(prev.getDate() + 7)))
 
   if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const handleScroll = () => {
     const sc = scRef.current;
     if (!sc) return;
 
@@ -558,12 +396,6 @@ export default function SpreadsheetView({
         isLoadingRef.current = false;
       });
     }
-
-    // 스크롤 종료 시 주 스냅
-    if (scrollEndTimer.current) window.clearTimeout(scrollEndTimer.current);
-    scrollEndTimer.current = window.setTimeout(() => {
-      snapToNearestWeek();
-    }, 120); // 관성 스크롤 대기
   };
 
   return (
@@ -632,7 +464,6 @@ export default function SpreadsheetView({
             campaigns={campaigns}
             onCancel={() => setOpenCreate(false)}
             onSave={onCreateSchedule}
-            onBookingCreated={onBookingCreated}
           />
         </div>
       </div>
@@ -643,7 +474,7 @@ export default function SpreadsheetView({
             <ChevronLeft size={20} />
           </button>
           <h3 className="text-lg font-semibold">
-            {title}
+            {format(weekStart, 'M월 d일', { locale: ko })} 주 ({format(weekStart, 'M/d')} ~ {format(weekEnd, 'M/d')})
           </h3>
           <button onClick={goToNextWeek} className="p-2 hover:bg-gray-200 rounded">
             <ChevronRight size={20} />
@@ -654,76 +485,50 @@ export default function SpreadsheetView({
       <div
         ref={scRef}
         onScroll={handleScroll}
-        className="overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-gutter:stable_both-edges] [-webkit-overflow-scrolling:touch] relative smooth-scroll"
+        className="overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-gutter:stable_both-edges] [-webkit-overflow-scrolling:touch] relative"
       >
-        {/* ⬇⬇⬇ 추가: 헤더(날짜/라벨) 전체를 덮는 왼쪽 가림막 */}
+        {/* Left mask to prevent underlying date cells from bleeding under sticky cols */}
         <div
           aria-hidden
-          className="mask-left-header"
+          className="sticky-left-mask"
           style={{
             position: 'sticky',
             left: 0,
-            top: 0,                        // 헤더 1단의 최상단부터 덮기
-            width: left3,                  // 고정 3열 총 너비
-            height: 'var(--head-total)',   // 헤더 2줄 높이 전체
-            zIndex: 85,                    // 날짜 th(z-70) 위, 라벨 th(z-90) 아래
-            background: '#fff',
-            borderRight: '1px solid var(--grid)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* ⬇ 기존 바디 가림막은 헤더 총 높이에 맞춰 top/height 재설정 */}
-        <div
-          aria-hidden
-          className="mask-left-body"
-          style={{
-            position: 'sticky',
-            left: 0,
-            top: 'var(--head-total)',
+            top: headH,
             width: left3,
-            height: 'calc(100% - var(--head-total))',
+            height: `calc(100% - ${headH}px)`,
             zIndex: 50,
             background: '#fff',
             pointerEvents: 'none',
           }}
         />
 
-        <div className="inline-block min-w-max" style={zoomVars}>
-                  <table className={`table-grid ${densityClass}`}>
+        {/* Right border of sticky block */}
+        <div
+          aria-hidden
+          className="sticky"
+          style={{
+            position: 'sticky',
+            left: left3,
+            top: headH,
+            height: `calc(100% - ${headH}px)`,
+            width: 0,
+            zIndex: 55,
+            borderRight: '1px solid #DADADA',
+            pointerEvents: 'none',
+          }}
+        />
+        <div className="inline-block min-w-max" style={zoomStyle}>
+        <table className={`${densityClass}`} style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
           <thead>
-            {/* 1단: 날짜 헤더(좌측 3칸 비워두고, 날짜는 여기서만 표시) */}
-            <tr className="bg-white head-dates">
-              {/* 비워두는 3칸 (sticky + 좌측 오프셋 적용) */}
-              <th className="sticky top-0 left-0 z-[90] bg-white p-2 minw-col1 grid-head sticky-col" />
-              <th className="sticky top-0 z-[90] bg-white p-2 minw-col2 grid-head sticky-col" style={{ left: left1 }} />
-              <th className="sticky top-0 z-[90] bg-white p-2 minw-col3 grid-head sticky-col" style={{ left: left2 }} />
-              {/* 날짜 헤더 (지도: days) */}
-              {days.map((day, i) => (
-                <th
-                  key={day.toISOString()}
-                  ref={(el) => { dayRefs.current[i] = el; }}
-                  className="sticky top-0 z-[70] bg-white p-2 minw-day text-center grid-head grid-cell"
-                >
+            <tr ref={headRowRef} className="bg-white h-12 grid-first-row">
+              <th ref={thRef1} className="sticky top-0 left-0 z-[90] bg-white p-2 min-w-[8rem] grid-head sticky-col">구분</th>
+              <th ref={thRef2} className="sticky top-0 z-[90] bg-white p-2 min-w-[10rem] grid-head sticky-col" style={{ left: left1 }}>지면명</th>
+              <th ref={thRef3} className="sticky top-0 z-[90] bg-white p-2 min-w-[8rem] grid-head sticky-col" style={{ left: left2 }}>구좌명</th>
+              {days.map(day => (
+                <th key={day.toISOString()} className="sticky top-0 z-[70] bg-white p-2 min-w-[8rem] text-center grid-head grid-cell">
                   {format(day, 'E M/d', { locale: ko })}
                 </th>
-              ))}
-            </tr>
-
-            {/* 2단: 고정열 라벨(구분/지면명/구좌명) + 날짜 칸은 빈칸(격자선만) */}
-            <tr ref={headRowRef} className="bg-white head-labels">
-              <th ref={thRef1} className="sticky z-[90] bg-white p-2 minw-col1 grid-head sticky-col" style={{ top: 'var(--head-h1)' }}>
-                구분
-              </th>
-              <th ref={thRef2} className="sticky z-[90] bg-white p-2 minw-col2 grid-head sticky-col" style={{ left: left1, top: 'var(--head-h1)' }}>
-                지면명
-              </th>
-              <th ref={thRef3} className="sticky z-[90] bg-white p-2 minw-col3 grid-head sticky-col" style={{ left: left2, top: 'var(--head-h1)' }}>
-                구좌명
-              </th>
-              {/* 날짜 영역은 격자 정렬만 맞추고 내용은 없음 */}
-              {days.map((day) => (
-                <th key={`empty-${day.toISOString()}`} className="sticky z-[60] bg-white p-2 minw-day grid-head grid-cell" style={{ top: 'var(--head-h1)' }} />
               ))}
             </tr>
           </thead>
@@ -739,7 +544,7 @@ export default function SpreadsheetView({
               // Render rows for each placement and slot
               category.placements.forEach((placement) => {
                 // Section context
-                const rowsInThisSection: string[] = placement.slots.map((s: any) => s.slot?.banner_id || '')
+                const rowsInThisSection: string[] = placement.slots.map((s: any) => s.slot.banner_id)
                 const spec = getSummarySpec(rowsInThisSection)
                 const bodyCount = placement.slots.length
                 const hasSummary = !!spec
@@ -756,17 +561,17 @@ export default function SpreadsheetView({
                     normBannerBase
                   )
                   rows.push(
-                    <tr key={`summary-top-${spec.mode}-${(category as any).__key}-${(placement as any).__key}`} className={`h-10 ${spec.rowClass}`}>
+                    <tr key={`summary-top-${spec.mode}-${category.category.name}-${placement.placement.name}`} className={`h-10 ${spec.rowClass}`}>
                       {/* 1st column: group cell spans body + summary */}
-                                             <td rowSpan={groupRowSpan} className="sticky left-0 z-[90] bg-white p-2 sticky-col grid-cell" style={{ top: 'var(--head-total)' }}>
+                      <td rowSpan={groupRowSpan} className="sticky left-0 z-[90] bg-white p-2 sticky-col grid-cell">
                         {category.category.name}
                       </td>
                       {/* 2nd column: label */}
-                                             <td className={`sticky z-[80] ${spec.rowClass} font-medium p-2 sticky-col grid-cell`} style={{ left: left1, top: 'var(--head-total)' }}>
+                      <td className={`sticky z-[80] ${spec.rowClass} font-medium p-2 sticky-col grid-cell`} style={{ left: left1 }}>
                         {spec.label}
                       </td>
                       {/* 3rd column: empty structural */}
-                                             <td className={`sticky z-[80] ${spec.rowClass} sticky-col grid-cell`} style={{ left: left2, top: 'var(--head-total)' }} />
+                      <td className={`sticky z-[80] ${spec.rowClass} sticky-col grid-cell`} style={{ left: left2 }} />
                       {renderMerged(summary.spans, summary.byDate, spec.mode === 'impressions' ? 'tabular-nums' : 'text-sm')}
                     </tr>
                   )
@@ -777,10 +582,10 @@ export default function SpreadsheetView({
                 placement.slots.forEach((slot, slotIndex) => {
                   const isFirstRowOfPlacement = slotIndex === 0
                   rows.push(
-                    <tr key={`${(category as any).__key}-${(placement as any).__key}-${(slot as any).__key}`} className="h-8 hover:bg-gray-50">
+                    <tr key={`${category.category.name}-${placement.placement.name}-${slot.slot.name}`} className="h-8 hover:bg-gray-50">
                       {/* 1st column: only when summary is at bottom and this is first body row */}
                       {!PLACE_SUMMARY_TOP && isFirstRowOfPlacement && (
-                        <td rowSpan={groupRowSpan} className="sticky left-0 z-[90] bg-white p-2 sticky-col grid-cell" style={{ top: 'var(--head-total)' }}>
+                        <td rowSpan={groupRowSpan} className="sticky left-0 z-[90] bg-white p-2 sticky-col grid-cell">
                           {category.category.name}
                         </td>
                       )}
@@ -789,29 +594,29 @@ export default function SpreadsheetView({
                         <td
                           rowSpan={bodyCount}
                           className="sticky z-[80] bg-white p-2 text-sm font-semibold align-top text-black sticky-col grid-cell"
-                          style={{ left: left1, top: 'var(--head-total)' }}
+                          style={{ left: left1 }}
                         >
-                          {placement.placement?.name ?? ''}
+                          {placement.placement.name}
                         </td>
                       )}
                       {/* 3rd column: slot name */}
                       <td
                         className="sticky z-[80] bg-white p-2 text-sm text-black pl-8 font-medium sticky-col grid-cell"
-                        style={{ left: left2, top: 'var(--head-total)' }}
+                        style={{ left: left2 }}
                       >
-                        {slot.slot?.name ?? ''}
+                        {slot.slot.name}
                       </td>
                       {slot.adData.map((data, dayIndex) => {
                         if (data.skip) return null
-                        
-                        // 기존 스케줄이 있으면 기존 로직 사용
-                        if (data.schedules && data.schedules.length > 0) {
-                          return (
-                            <td
-                              key={`${(category as any).__key}-${(placement as any).__key}-${(slot as any).__key}-${dayIndex}`}
-                              colSpan={data.colSpan}
-                              className="grid-cell p-1 text-xs relative align-middle minw-day text-center font-bold text-[0.95rem]"
-                            >
+                        return (
+                          <td
+                            key={dayIndex}
+                            colSpan={data.colSpan}
+                            className={`grid-cell p-1 text-xs relative align-middle min-w-[8rem] text-center ${
+                              data.schedules && data.schedules.length > 0 ? 'font-bold text-[0.95rem]' : ''
+                            }`}
+                          >
+                            {data.schedules && data.schedules.length > 0 ? (
                               <div
                                 className={`p-1 rounded h-full flex flex-col justify-center text-center space-y-1 ${
                                   data.schedules.length > 1 ? 'bg-red-100' : 'bg-blue-100'
@@ -827,44 +632,9 @@ export default function SpreadsheetView({
                                   </div>
                                 ))}
                               </div>
-                            </td>
-                          )
-                        }
-                        
-                        // Booking이 있으면 새로운 CellPill 사용
-                        const cellBookings = bookings.filter(
-                          b => isSameDay(parseYmd(b.basis_dt), days[dayIndex]) && isSameSlot(slot.slot?.banner_id || '', b.screen_id)
-                        );
-                        
-                        if (cellBookings.length > 0) {
-                          // 새로운 buildCellRuns 사용
-                          const weekDays = days;
-                          const row = { banner_id: slot.slot?.banner_id || '' };
-                          const cellRuns = buildCellRuns({ rowBannerId: row.banner_id, weekDays, bookings: bookings as Booking[] });
-                          
-                          // 해당 날짜의 셀만 렌더링
-                          const dayCell = cellRuns[dayIndex];
-                          if (dayCell) {
-                            return (
-                              <td
-                                key={`${(category as any).__key}-${(placement as any).__key}-${(slot as any).__key}-${dayIndex}`}
-                                colSpan={dayCell.span || 1}
-                                className="grid-cell p-0"
-                              >
-                                <CellPill labelTop={dayCell.labelTop} labelBottom={dayCell.labelBottom} />
-                              </td>
-                            )
-                          }
-                        }
-                        
-                        // 빈 셀
-                        return (
-                          <td
-                            key={`${(category as any).__key}-${(placement as any).__key}-${(slot as any).__key}-${dayIndex}`}
-                            colSpan={data.colSpan}
-                            className="grid-cell p-1 text-xs relative align-middle minw-day text-center"
-                          >
-                            <div className="h-full w-full flex items-center justify-center text-gray-300">-</div>
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-gray-300">-</div>
+                            )}
                           </td>
                         )
                       })}
@@ -884,12 +654,12 @@ export default function SpreadsheetView({
                     normBannerBase
                   )
                   rows.push(
-                    <tr key={`summary-bottom-${spec.mode}-${(category as any).__key}-${(placement as any).__key}`} className={`h-10 ${spec.rowClass}`}>
+                    <tr key={`summary-bottom-${spec.mode}-${category.category.name}-${placement.placement.name}`} className={`h-10 ${spec.rowClass}`}>
                       {/* 1st column omitted; covered by rowSpan on first body row */}
-                      <td className={`sticky z-[80] ${spec.rowClass} font-medium p-2 sticky-col grid-cell`} style={{ left: left1, top: 'var(--head-total)' }}>
+                      <td className={`sticky z-[80] ${spec.rowClass} font-medium p-2 sticky-col grid-cell`} style={{ left: left1 }}>
                         {spec.label}
                       </td>
-                      <td className={`sticky z-[80] ${spec.rowClass} sticky-col grid-cell`} style={{ left: left2, top: 'var(--head-total)' }} />
+                      <td className={`sticky z-[80] ${spec.rowClass} sticky-col grid-cell`} style={{ left: left2 }} />
                       {renderMerged(summary.spans, summary.byDate, spec.mode === 'impressions' ? 'tabular-nums' : 'text-sm')}
                     </tr>
                   )
