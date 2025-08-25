@@ -107,13 +107,8 @@ export default function SpreadsheetView({
   const isLoadingRef = useRef(false);
   const lastLeftRef = useRef(0);
 
-  const zoomStyle = useMemo(() => ({
-    transform: `scale(${zoom})`,
-    transformOrigin: 'top left' as const,
-    width: `${100 / zoom}%`,
-    willChange: 'transform' as const,
-    backfaceVisibility: 'hidden' as const,
-  }), [zoom]);
+  const zoomVars = useMemo(() => ({ ['--z' as any]: zoom }), [zoom]);
+  // CSS variable-based zoom; no transform scaling to avoid HiDPI export inflation
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
@@ -518,7 +513,7 @@ export default function SpreadsheetView({
             pointerEvents: 'none',
           }}
         />
-        <div className="inline-block min-w-max" style={zoomStyle}>
+        <div className="inline-block min-w-max" style={zoomVars}>
         <table className={`${densityClass}`} style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
           <thead>
             <tr ref={headRowRef} className="bg-white h-12 grid-first-row">
